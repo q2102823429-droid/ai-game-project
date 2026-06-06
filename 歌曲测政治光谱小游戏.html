@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>歌曲意识形态测试 - 40选10</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI','Microsoft YaHei',sans-serif;background:#0f0f1a;color:#e0e0e0;min-height:100vh;overflow-x:hidden}
+.container{max-width:1100px;margin:0 auto;padding:20px}
+
+.header{text-align:center;padding:30px 0 20px}
+.header h1{font-size:2.2em;background:linear-gradient(135deg,#ff6b6b,#ffd93d,#6bcb77,#4d96ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.header p{color:#888;font-size:.95em}
+
+.progress-wrap{position:sticky;top:0;z-index:100;background:#0f0f1a;padding:12px 0;border-bottom:1px solid #222}
+.progress-bar{height:6px;background:#222;border-radius:3px;overflow:hidden;margin-bottom:8px}
+.progress-fill{height:100%;background:linear-gradient(90deg,#4d96ff,#6bcb77);transition:width .3s;border-radius:3px}
+.progress-info{display:flex;justify-content:space-between;align-items:center;font-size:.9em}
+.progress-info .count{color:#ffd93d;font-weight:bold;font-size:1.1em}
+
+.btn{padding:10px 28px;border:none;border-radius:8px;cursor:pointer;font-size:1em;font-weight:600;transition:all .2s}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn-primary{background:linear-gradient(135deg,#4d96ff,#6bcb77);color:#fff}
+.btn-primary:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 4px 20px rgba(77,150,255,.4)}
+.btn-secondary{background:#222;color:#ccc;margin-right:10px}
+.btn-secondary:hover{background:#333}
+
+.song-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin-top:20px}
+.song-card{background:#1a1a2e;border:2px solid #222;border-radius:10px;padding:14px;cursor:pointer;transition:all .2s;position:relative;user-select:none}
+.song-card:hover{border-color:#444;transform:translateY(-2px)}
+.song-card.selected{border-color:#ffd93d;background:#1f1f1a;box-shadow:0 0 20px rgba(255,217,61,.15)}
+.song-card .index{position:absolute;top:8px;right:12px;font-size:.75em;color:#555}
+.song-card.selected .index{color:#ffd93d}
+.song-card .title{font-size:1em;font-weight:600;margin-bottom:4px;padding-right:24px}
+.song-card .artist{font-size:.82em;color:#888}
+.song-card .check{position:absolute;top:8px;left:12px;width:20px;height:20px;border-radius:50%;border:2px solid #444;display:flex;align-items:center;justify-content:center;font-size:.7em;transition:all .2s}
+.song-card.selected .check{background:#ffd93d;border-color:#ffd93d;color:#1a1a2e}
+
+.song-card .tags{margin-top:6px;display:flex;gap:4px;flex-wrap:wrap}
+.song-card .tag{font-size:.65em;padding:1px 6px;border-radius:10px;background:#222;color:#666}
+.song-card.selected .tag{background:#2a2a1a;color:#aa9}
+
+.results{display:none}
+.results.active{display:block}
+.results-title{text-align:center;font-size:1.6em;margin:30px 0 10px;color:#ffd93d}
+.charts-row{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;margin:20px 0}
+.chart-box{background:#1a1a2e;border:1px solid #222;border-radius:12px;padding:16px;text-align:center}
+.chart-box h3{font-size:.95em;color:#aaa;margin-bottom:8px}
+
+.summary{background:#1a1a2e;border:1px solid #333;border-radius:12px;padding:24px;margin:20px 0;max-width:700px;margin-left:auto;margin-right:auto}
+.summary h3{color:#ffd93d;margin-bottom:12px}
+.summary .ideology-tag{display:inline-block;padding:4px 12px;border-radius:20px;font-size:.85em;margin:3px;background:#222;border:1px solid #444}
+.summary .ideology-tag.active{background:#2a2a1a;border-color:#ffd93d;color:#ffd93d}
+.dim-bars{margin-top:16px}
+.dim-bar{display:flex;align-items:center;margin:8px 0;gap:10px}
+.dim-bar .label{width:90px;font-size:.82em;text-align:right;color:#aaa;flex-shrink:0}
+.dim-bar .track{flex:1;height:8px;background:#222;border-radius:4px;overflow:hidden;position:relative}
+.dim-bar .fill{height:100%;border-radius:4px;transition:width .6s ease}
+.dim-bar .center-line{position:absolute;left:50%;top:0;bottom:0;width:1px;background:#444}
+
+.actions{text-align:center;margin:20px 0 40px}
+.hint{text-align:center;color:#555;font-size:.82em;margin:8px 0}
+
+@media(max-width:600px){
+  .song-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
+  .song-card{padding:10px}
+  .song-card .title{font-size:.88em}
+  .charts-row{flex-direction:column;align-items:center}
+}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+  <h1>歌曲意识形态测试</h1>
+  <p>从 40 首歌中选出你最喜爱的 10 首，看看你的意识形态坐标</p>
+</div>
+
+<div class="progress-wrap" id="progressWrap">
+  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  <div class="progress-info">
+    <span>已选：<span class="count" id="countDisplay">0</span> / 10</span>
+    <button class="btn btn-primary" id="submitBtn" disabled onclick="showResults()">查看结果</button>
+  </div>
+</div>
+
+<div class="hint" id="hint">点击歌曲卡片选择你最喜欢的 10 首歌</div>
+<div class="song-grid" id="songGrid"></div>
+
+<div class="results" id="results">
+  <div class="results-title">你的意识形态画像</div>
+  <div class="charts-row">
+    <div class="chart-box">
+      <h3>政治光谱</h3>
+      <canvas id="politicalCompass" width="340" height="340"></canvas>
+    </div>
+    <div class="chart-box">
+      <h3>文化光谱</h3>
+      <canvas id="culturalCompass" width="340" height="340"></canvas>
+    </div>
+    <div class="chart-box">
+      <h3>四维雷达</h3>
+      <canvas id="radarChart" width="340" height="340"></canvas>
+    </div>
+  </div>
+  <div class="summary" id="summary"></div>
+  <div class="actions">
+    <button class="btn btn-secondary" onclick="resetAll()">重新选择</button>
+  </div>
+</div>
+</div>
+
+<script>
+// ============ 评分体系 ============
+// eco: 经济左翼(-10) ↔ 右翼(+10)
+// soc: 社会威权(-10) ↔ 自由(+10)
+// trad: 文化传统(-10) ↔ 现代(+10)
+// col: 集体主义(-10) ↔ 个人主义(+10)
+
+// ===== 40首歌曲 (古风/DJ古风 ≥ 15首，含政治隐喻解读) =====
+// 缩写: eco=经济左(-)→右(+), soc=社会威权(-)→自由(+),
+//        trad=文化传统(-)→现代(+), col=集体(-)→个人(+)
+const SONGS = [
+  // ===== 古风 / DJ古风 (17首) =====
+  // 1. 赤伶 —— 戏子唱国破，"台下人走过不见旧颜色" 暗喻亡国奴/文化抵抗
+  {id:1, title:'赤伶', artist:'HITA', eco:-3, soc:-3, trad:-7, col:-4},
+  // 2. 星星点灯 —— "星星点灯照亮我的家门" 黑暗中指路/集体守望，底层的希望叙事
+  {id:2, title:'星星点灯', artist:'郑智化', eco:-2, soc:+3, trad:-3, col:-5},
+  // 3. 牵丝戏 —— 傀儡与傀儡师，经典权力隐喻，"你错我不肯对" 暗指个体vs体制
+  {id:3, title:'牵丝戏', artist:'银临/Aki阿杰', eco:-2, soc:-4, trad:-7, col:-3},
+  // 4. 盗将行 —— 盗贼从军，"劫过九重城关" 暗喻反叛/底层逆袭
+  {id:4, title:'盗将行', artist:'花粥/马雨阳', eco:-4, soc:+5, trad:-4, col:+4},
+  // 5. 踏山河 —— 征战征服，"万里山河都踏过" 崇尚武力/秩序
+  {id:5, title:'踏山河', artist:'七叔呢', eco:+3, soc:-6, trad:-6, col:-2},
+  // 6. 水手 —— "他说风雨中这点痛算什么" 硬汉式坚韧/个体扛住苦难的励志叙事
+  {id:6, title:'水手', artist:'郑智化', eco:+1, soc:+4, trad:-2, col:+5},
+  // 7. 半生雪 —— "半生风雪" 命运无常，个体在时代洪流中的无力
+  {id:7, title:'半生雪', artist:'七叔呢', eco:-1, soc:-2, trad:-6, col:-1},
+  // 8. 关山酒 —— 戍边守关，"塞北风沙" 暗喻家国责任vs个人自由
+  {id:8, title:'关山酒', artist:'等什么君', eco:0, soc:-5, trad:-8, col:-5},
+  // 9. 长安姑娘 —— 长安故都+红颜旧梦，盛世怀旧/黄金时代的文化乡愁
+  {id:9, title:'长安姑娘', artist:'等什么君', eco:0, soc:-2, trad:-8, col:-2},
+  // 10. 春庭春 —— 庭院春深锁不住，闺怨/幽闭中的暗涌，大宅门内的个体叙事
+  {id:10, title:'春庭春', artist:'等什么君', eco:0, soc:0, trad:-8, col:+1},
+  // 11. 权御天下 —— "天下为公" 权力支配，中央集权的史诗化表达
+  {id:11, title:'权御天下', artist:'洛天依/乌龟', eco:+2, soc:-7, trad:-5, col:-3},
+  // 12. 青花瓷 —— 周杰伦中国风标杆，文化自信/审美化的传统，个体工艺vs批量生产
+  {id:12, title:'青花瓷', artist:'周杰伦', eco:+2, soc:+2, trad:-6, col:+4},
+  // 13. 倾尽天下 —— "为你倾尽天下" 为大局牺牲一切，极端集体主义浪漫化
+  {id:13, title:'倾尽天下', artist:'河图', eco:-4, soc:-5, trad:-7, col:-7},
+  // 14. 故人叹 —— 旧友离散，"故人一去不复返" 历史变迁中的个体悲剧
+  // 14. 辞九门回忆 —— 等什么君，九门旧事如烟，对逝去时代的挽歌式回望
+  {id:14, title:'辞九门回忆', artist:'等什么君', eco:0, soc:-3, trad:-8, col:-2},
+  // 15. 且听龙吟 —— "龙吟" 华夏权力象征，古风中的民族自豪/权威叙事
+  {id:15, title:'且听龙吟', artist:'古风圈', eco:+1, soc:-4, trad:-7, col:-3},
+  // 16. 燕无歇 (DJ版) —— "燕无歇" DJ版是抖音热门，纯娱乐化解构古风
+  {id:16, title:'燕无歇 (DJ版)', artist:'蒋雪儿/DJ版', eco:+1, soc:+5, trad:+1, col:+6},
+  // 17. 下山 —— "我下山去" 逃离/出走叙事，反叛传统束缚
+  {id:17, title:'下山', artist:'要不要买菜', eco:+1, soc:+6, trad:+1, col:+6},
+
+  // ===== 中文经典 / 革命 / 爱国 (8首) =====
+  // 18. 喀秋莎 —— "正当梨花开遍了天涯" 苏联红歌/战地守望，左翼浪漫主义
+  {id:18, title:'喀秋莎', artist:'苏联民歌', eco:-5, soc:-3, trad:-6, col:-5},
+  // 弱水三千 —— "弱水三千只取一瓢" 万千选择中只守一个，隐喻忠诚/执念与个体抉择
+  {id:19, title:'弱水三千', artist:'石头/张晓棠', eco:-1, soc:-3, trad:-7, col:-4},
+  // 20. 孤勇者 —— "谁说站在光里的才算英雄" 暗处的抗争/不被承认的英雄主义
+  {id:20, title:'孤勇者', artist:'陈奕迅', eco:+1, soc:+7, trad:+5, col:+7},
+  // 21. 难却 —— "情难却" 欲拒还迎，情感牵绊/身不由己的古典困境
+  {id:21, title:'难却', artist:'古风圈', eco:+1, soc:+1, trad:-6, col:+3},
+  // 22. 探故知 —— 重访旧友故地，"人面不知何处去" 物是人非/怀旧
+  {id:22, title:'探故知', artist:'等什么君', eco:0, soc:-2, trad:-8, col:-2},
+  // 23. 鸳鸯戏 —— 鸳鸯戏水传统意象，古典爱情/成双成对的秩序美学
+  {id:23, title:'鸳鸯戏', artist:'古风圈', eco:0, soc:-1, trad:-8, col:-1},
+  // 24. 精卫 —— 精卫填海神话，"我以此生填沧海" 徒劳/不屈，个体对抗宿命
+  {id:24, title:'精卫', artist:'古风圈', eco:-2, soc:+5, trad:-4, col:+4},
+  // 25. 烟花易冷 —— "雨纷纷旧故里草木深" 繁华成墟/旧梦难温，左翼理想主义挽歌
+  {id:25, title:'烟花易冷', artist:'周杰伦', eco:-6, soc:-4, trad:-6, col:-5},
+
+  // ===== 中国摇滚/独立 (4首) =====
+  // 26. 山楂树 —— "山楂树下" 苏俄民歌，集体农庄的青春与等待，左翼田园挽歌
+  {id:26, title:'山楂树', artist:'苏联民歌', eco:-4, soc:-3, trad:-7, col:-5},
+  {id:27, title:'海阔天空', artist:'Beyond', eco:0, soc:+6, trad:+3, col:+5},
+  {id:28, title:'追梦赤子心', artist:'GALA', eco:+3, soc:+5, trad:+3, col:+8},
+  {id:29, title:'平凡之路', artist:'朴树', eco:+1, soc:+4, trad:+4, col:+7},
+
+  // ===== 华语经典/独立/摇滚 (8首) =====
+  // 漫步人生路 —— 邓丽君粤语经典，"路虽远未疲倦" 乐观韧性/个体从容
+  {id:30, title:'漫步人生路', artist:'邓丽君', eco:+2, soc:+3, trad:-3, col:+5},
+  // 咏春 —— 武术入曲，"寸劲破千军" 传统力量/以柔克刚的自主精神
+  {id:31, title:'咏春', artist:'刘珂矣', eco:0, soc:-2, trad:-7, col:+1},
+  // 找自己 —— "哗啦啦天在下雨" 都市迷失→雨中找回自我，个体觉醒
+  {id:32, title:'找自己', artist:'陶喆', eco:+1, soc:+5, trad:+4, col:+7},
+  // 大石碎胸口 —— 万青神作，"如此生活三十年直到大厦崩塌" 体制内窒息/社会批判
+  {id:33, title:'大石碎胸口', artist:'万能青年旅店', eco:-7, soc:+6, trad:+6, col:+1},
+  // 怒放的生命 —— "我想要怒放的生命" 冲破束缚/自由主义生命力
+  {id:34, title:'怒放的生命', artist:'汪峰', eco:+3, soc:+6, trad:+3, col:+7},
+  // 蓝莲花 —— "没有什么能够阻挡我对自由的向往" 精神自由/永不妥协
+  {id:35, title:'蓝莲花', artist:'许巍', eco:+1, soc:+8, trad:+4, col:+8},
+  // 36. 莫问归期 —— "莫问归期未有期" 离去不归/漂泊无定，拒绝被归化
+  {id:36, title:'莫问归期', artist:'蒋雪儿', eco:0, soc:+2, trad:-6, col:+4},
+  // 春天里 —— "如果有一天我老无所依" 底层怀旧/工人阶层叙事
+  {id:37, title:'春天里', artist:'汪峰', eco:-4, soc:+3, trad:-1, col:+4},
+
+  // ===== 古风跨界 (3首) =====
+  // 南山南 —— "你在南方的艳阳里大雪纷飞" 时空错位/平行现实，个体感受的不可通约
+  {id:38, title:'南山南', artist:'马頔', eco:+1, soc:+5, trad:-4, col:+6},
+  // 游山恋 —— 寄情山水逃避庙堂，"我欲归去" 古典隐逸/不合作主义
+  {id:39, title:'游山恋', artist:'海伦', eco:0, soc:+4, trad:-5, col:+5},
+  // 游京 —— "我走在长街中" 京城繁华巡游，观盛世而自知过客，暧昧的体制外凝视
+  {id:40, title:'游京', artist:'海伦', eco:0, soc:-1, trad:-3, col:+4}
+];
+
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+
+let songs=[],selected=new Set(),resultsShown=false;
+
+function init(){
+  songs=shuffle(SONGS);
+  selected=new Set();
+  resultsShown=false;
+  document.getElementById('results').classList.remove('active');
+  document.getElementById('submitBtn').disabled=true;
+  document.getElementById('progressFill').style.width='0%';
+  document.getElementById('countDisplay').textContent='0';
+  document.getElementById('hint').style.display='';
+  renderGrid();
+}
+
+// 古风歌曲ID集合，用于标记流派标签
+const GUFENG_IDS=new Set([1,3,4,5,7,8,9,10,11,12,13,14,15,16,17,19,21,22,23,24,25,31,36,38,39,40]);
+
+function renderGrid(){
+  document.getElementById('songGrid').innerHTML=songs.map((s,i)=>`
+    <div class="song-card${selected.has(s.id)?' selected':''}" onclick="toggleSong(${s.id})" id="card-${s.id}">
+      <div class="check">${selected.has(s.id)?'✓':''}</div>
+      <div class="index">#${i+1}</div>
+      <div class="title">${s.title}</div>
+      <div class="artist">${s.artist}</div>
+      ${GUFENG_IDS.has(s.id)?'<div class="tags"><span class="tag">古风</span></div>':''}
+    </div>
+  `).join('');
+}
+
+function toggleSong(id){
+  if(resultsShown)return;
+  if(selected.has(id)){selected.delete(id)}
+  else{if(selected.size>=10)return;selected.add(id)}
+  updateUI();
+}
+
+function updateUI(){
+  document.getElementById('countDisplay').textContent=selected.size;
+  document.getElementById('progressFill').style.width=(selected.size/10*100)+'%';
+  document.getElementById('submitBtn').disabled=selected.size!==10;
+  document.getElementById('hint').style.display=selected.size>=10?'none':'';
+  songs.forEach(s=>{
+    const card=document.getElementById('card-'+s.id);
+    if(!card)return;
+    const chk=card.querySelector('.check');
+    if(selected.has(s.id)){card.classList.add('selected');chk.textContent='✓'}
+    else{card.classList.remove('selected');chk.textContent=''}
+  });
+}
+
+function getSelectedSongs(){return songs.filter(s=>selected.has(s.id))}
+
+function calcAvg(){
+  const sel=getSelectedSongs();
+  if(!sel.length)return{eco:0,soc:0,trad:0,col:0};
+  return{
+    eco:sel.reduce((a,s)=>a+s.eco,0)/sel.length,
+    soc:sel.reduce((a,s)=>a+s.soc,0)/sel.length,
+    trad:sel.reduce((a,s)=>a+s.trad,0)/sel.length,
+    col:sel.reduce((a,s)=>a+s.col,0)/sel.length
+  };
+}
+
+// ============ 画布绘制 ============
+
+function drawCompass(canvasId, xVal, yVal, xLeft, xRight, yTop, yBottom){
+  const canvas=document.getElementById(canvasId);
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  const cx=W/2,cy=H/2,margin=32;
+
+  // Quadrant backgrounds
+  ctx.fillStyle='rgba(77,150,255,.07)';
+  ctx.fillRect(margin,margin,cx-margin,cy-margin);
+  ctx.fillStyle='rgba(255,107,107,.07)';
+  ctx.fillRect(cx,margin,cx-margin,cy-margin);
+  ctx.fillStyle='rgba(77,150,255,.03)';
+  ctx.fillRect(margin,cy,cx-margin,cy-margin);
+  ctx.fillStyle='rgba(255,107,107,.03)';
+  ctx.fillRect(cx,cy,cx-margin,cy-margin);
+
+  // Axes
+  ctx.strokeStyle='#444';ctx.lineWidth=1;
+  ctx.beginPath();
+  ctx.moveTo(cx,margin);ctx.lineTo(cx,H-margin);
+  ctx.moveTo(margin,cy);ctx.lineTo(W-margin,cy);
+  ctx.stroke();
+
+  // Tick marks
+  ctx.fillStyle='#666';
+  ctx.font='10px "Microsoft YaHei",sans-serif';
+  ctx.textAlign='center';
+  for(let i=-8;i<=8;i+=4){
+    const rx=cx+(i/10)*(cx-margin);
+    const ry=cy+(i/10)*(cy-margin);  // positive values go DOWN (political compass convention)
+    ctx.fillText(i,rx,cy+14);
+    ctx.fillText(i,cx-14,ry+4);
+    ctx.strokeStyle='#333';
+    ctx.beginPath();
+    ctx.moveTo(rx,cy-3);ctx.lineTo(rx,cy+3);ctx.stroke();
+    ctx.moveTo(cx-3,ry);ctx.lineTo(cx+3,ry);ctx.stroke();
+  }
+
+  // Zero line highlight
+  ctx.strokeStyle='#333';ctx.lineWidth=1;
+  ctx.setLineDash([4,8]);
+  ctx.beginPath();
+  ctx.moveTo(cx,margin);ctx.lineTo(cx,H-margin);
+  ctx.moveTo(margin,cy);ctx.lineTo(W-margin,cy);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Axis labels
+  ctx.fillStyle='#aaa';
+  ctx.font='bold 12px "Microsoft YaHei",sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText(xLeft,margin,cy-8);
+  ctx.fillText(xRight,W-margin,cy-8);
+  ctx.fillText(yTop,cx,margin-8);
+  ctx.fillText(yBottom,cx,H-margin+16);
+
+  // User dot
+  const dotX=cx+(xVal/10)*(cx-margin);
+  const dotY=cy+(yVal/10)*(cy-margin);
+  const clampX=Math.max(margin,Math.min(W-margin,dotX));
+  const clampY=Math.max(margin,Math.min(H-margin,dotY));
+
+  // Glow ring
+  ctx.beginPath();
+  ctx.arc(clampX,clampY,12,0,Math.PI*2);
+  ctx.fillStyle='rgba(255,217,61,.25)';
+  ctx.fill();
+
+  // Dot
+  ctx.beginPath();
+  ctx.arc(clampX,clampY,7,0,Math.PI*2);
+  ctx.fillStyle='#ffd93d';
+  ctx.fill();
+  ctx.strokeStyle='#fff';ctx.lineWidth=2;
+  ctx.stroke();
+
+  // Crosshair lines
+  ctx.strokeStyle='rgba(255,217,61,.4)';ctx.lineWidth=1;
+  ctx.setLineDash([2,4]);
+  ctx.beginPath();
+  ctx.moveTo(clampX,margin);ctx.lineTo(clampX,H-margin);
+  ctx.moveTo(margin,clampY);ctx.lineTo(W-margin,clampY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Score text
+  ctx.fillStyle='#ffd93d';
+  ctx.font='bold 11px "Microsoft YaHei",sans-serif';
+  const scoreX=(clampX>cx)?clampX+16:clampX-16;
+  const scoreY=(clampY>cy)?clampY+18:clampY-12;
+  ctx.textAlign=(clampX>cx)?'left':'right';
+  ctx.fillText(`(${xVal.toFixed(1)}, ${yVal.toFixed(1)})`,scoreX,scoreY);
+}
+
+function drawRadar(canvasId,scores){
+  const canvas=document.getElementById(canvasId);
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  const cx=W/2,cy=H/2,radius=115;
+  const dims=[
+    {key:'eco',label:'经济左翼'},
+    {key:'trad',label:'文化现代'},
+    {key:'soc',label:'社会自由'},
+    {key:'col',label:'个人主义'}
+  ];
+  const n=dims.length;
+  const step=Math.PI*2/n;
+
+  // Grid
+  for(let r=1;r<=3;r++){
+    ctx.beginPath();
+    for(let i=0;i<=n;i++){
+      const a=i*step-Math.PI/2;
+      const x=cx+(radius*r/3)*Math.cos(a);
+      const y=cy+(radius*r/3)*Math.sin(a);
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle='#333';ctx.lineWidth=1;ctx.stroke();
+  }
+
+  // Axes
+  for(let i=0;i<n;i++){
+    const a=i*step-Math.PI/2;
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.lineTo(cx+radius*Math.cos(a),cy+radius*Math.sin(a));
+    ctx.strokeStyle='#333';ctx.stroke();
+  }
+
+  // Labels
+  ctx.fillStyle='#aaa';
+  ctx.font='11px "Microsoft YaHei",sans-serif';
+  ctx.textAlign='center';
+  for(let i=0;i<n;i++){
+    const a=i*step-Math.PI/2;
+    const lx=cx+(radius+28)*Math.cos(a);
+    const ly=cy+(radius+28)*Math.sin(a);
+    ctx.fillText(dims[i].label,lx,ly+4);
+  }
+
+  // Score polygon
+  ctx.beginPath();
+  for(let i=0;i<n;i++){
+    const val=Math.max(-10,Math.min(10,scores[dims[i].key]));
+    const norm=(val+10)/20;
+    const a=i*step-Math.PI/2;
+    const x=cx+radius*norm*Math.cos(a);
+    const y=cy+radius*norm*Math.sin(a);
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }
+  ctx.closePath();
+  ctx.fillStyle='rgba(255,217,61,.2)';
+  ctx.fill();
+  ctx.strokeStyle='#ffd93d';ctx.lineWidth=2;
+  ctx.stroke();
+
+  // Vertices
+  for(let i=0;i<n;i++){
+    const val=Math.max(-10,Math.min(10,scores[dims[i].key]));
+    const norm=(val+10)/20;
+    const a=i*step-Math.PI/2;
+    const x=cx+radius*norm*Math.cos(a);
+    const y=cy+radius*norm*Math.sin(a);
+    ctx.beginPath();
+    ctx.arc(x,y,4,0,Math.PI*2);
+    ctx.fillStyle='#ffd93d';ctx.fill();
+  }
+
+  // Center dot
+  ctx.beginPath();
+  ctx.arc(cx,cy,2,0,Math.PI*2);
+  ctx.fillStyle='#444';ctx.fill();
+}
+
+// ============ 结果分析 ============
+
+function getIdeologyLabels(avg){
+  const labels=[];
+  if(avg.eco<-4)labels.push('经济左翼');
+  else if(avg.eco>4)labels.push('经济右翼');
+  else labels.push('经济中间派');
+
+  if(avg.soc<-4)labels.push('社会威权倾向');
+  else if(avg.soc>4)labels.push('社会自由倾向');
+  else labels.push('社会温和派');
+
+  if(avg.trad<-4)labels.push('文化传统主义');
+  else if(avg.trad>4)labels.push('文化进步主义');
+  else labels.push('文化中间派');
+
+  if(avg.col<-4)labels.push('集体主义');
+  else if(avg.col>4)labels.push('个人主义');
+  else labels.push('均衡取向');
+  return labels;
+}
+
+function getQuadrantName(eco,soc){
+  if(eco<=0&&soc<=0)return'左翼威权——支持公有制+强秩序，如传统社会主义者';
+  if(eco<=0&&soc>0)return'左翼自由——追求平等+个人自由，如社会民主/进步左翼';
+  if(eco>0&&soc<=0)return'右翼威权——支持市场+保守秩序，如传统保守主义';
+  return'右翼自由——崇尚市场+个体自由，如自由意志主义';
+}
+
+function getCulturalQuad(trad,col){
+  if(trad<=0&&col<=0)return'传统集体——重视传统共同体，如文化保守主义';
+  if(trad<=0&&col>0)return'传统个人——在传统框架内追求个人成就';
+  if(trad>0&&col<=0)return'现代集体——拥抱现代性的同时重视集体';
+  return'现代个人——追求现代性与个人表达，如进步个人主义';
+}
+
+function clamp(v,lo,hi){return Math.max(lo,Math.min(hi,v))}
+
+function showResults(){
+  if(selected.size!==10)return;
+  resultsShown=true;
+  document.getElementById('results').classList.add('active');
+  document.getElementById('submitBtn').disabled=true;
+  document.getElementById('hint').style.display='none';
+
+  const avg=calcAvg();
+
+  drawCompass('politicalCompass',avg.eco,avg.soc,'左翼','右翼','威权','自由');
+  drawCompass('culturalCompass',avg.trad,avg.col,'传统','现代','集体','个人');
+  drawRadar('radarChart',avg);
+
+  document.getElementById('results').scrollIntoView({behavior:'smooth'});
+
+  const labels=getIdeologyLabels(avg);
+  const dimRows=[
+    {label:'经济倾向',neg:'左翼/平等',pos:'右翼/市场',val:avg.eco},
+    {label:'社会倾向',neg:'威权/秩序',pos:'自由/个体',val:avg.soc},
+    {label:'文化倾向',neg:'传统/保守',pos:'现代/进步',val:avg.trad},
+    {label:'集体个人',neg:'集体主义',pos:'个人主义',val:avg.col}
+  ];
+
+  const selSongs=getSelectedSongs().map(s=>`${s.title}(${s.artist})`).join('、');
+
+  document.getElementById('summary').innerHTML=`
+    <h3>你的意识形态标签</h3>
+    <div style="margin:8px 0">
+      ${labels.map(l=>`<span class="ideology-tag active">${l}</span>`).join(' ')}
+    </div>
+    <div style="margin-top:16px;font-size:.9em;color:#aaa;line-height:1.8">
+      <div>政治象限：<strong style="color:#ffd93d">${getQuadrantName(avg.eco,avg.soc)}</strong></div>
+      <div>文化象限：<strong style="color:#ffd93d">${getCulturalQuad(avg.trad,avg.col)}</strong></div>
+    </div>
+    <div class="dim-bars" style="margin-top:20px">
+      ${dimRows.map(d=>{
+        const pct=(d.val+10)/20*100;
+        return `
+        <div class="dim-bar">
+          <span class="label">${d.label}</span>
+          <span style="font-size:.73em;color:#666;width:60px;text-align:right;flex-shrink:0">${d.neg}</span>
+          <div class="track">
+            <div class="center-line"></div>
+            <div class="fill" style="width:${pct}%;background:linear-gradient(90deg,#4d96ff,#ff6b6b)"></div>
+          </div>
+          <span style="font-size:.73em;color:#666;width:60px;flex-shrink:0">${d.pos}</span>
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="margin-top:20px;font-size:.8em;color:#555;line-height:1.6">
+      你的选择：${selSongs}
+    </div>
+  `;
+}
+
+function resetAll(){
+  init();
+  document.getElementById('results').classList.remove('active');
+  resultsShown=false;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+init();
+</script>
+</body>
+</html>
